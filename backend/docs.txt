@@ -1,0 +1,5 @@
+This is my AI system.
+It can answer questions using a knowledge base.
+You can replace this file with real documents later.
+Java palindrome example:
+A string is palindrome if it reads same forward and backward.
