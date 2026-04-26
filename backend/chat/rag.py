@@ -44,8 +44,10 @@ def get_user_db(user_id):
         allow_dangerous_deserialization=True
     )
 
-def ask_rag(query):
-    docs = db.similarity_search(query)
+def ask_rag(query, user_id=None):
+    user_db = get_user_db(user_id) if user_id is not None else None
+    active_db = user_db or db
+    docs = active_db.similarity_search(query)
 
     context = "\n".join([doc.page_content for doc in docs])
 
@@ -62,3 +64,24 @@ def ask_rag(query):
     response = llm.invoke(prompt)
 
     return response
+
+
+def generate_chat_title(message):
+    prompt = f"""
+    Create a concise chat title (max 8 words) for this user query.
+    Return only the title text with no quotes, markdown, or punctuation decorations.
+
+    User query:
+    {message}
+    """
+    try:
+        title = llm.invoke(prompt).strip().replace("\n", " ")
+        title = " ".join(title.split())
+        if title:
+            return title[:80]
+    except Exception:
+        pass
+
+    words = message.strip().split()
+    fallback = " ".join(words[:8]).strip()
+    return fallback[:80] if fallback else "New Chat"

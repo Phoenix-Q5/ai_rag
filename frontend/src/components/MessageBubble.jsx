@@ -7,23 +7,19 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export default function MessageBubble({ msg }) {
   return (
-    <Box
-      maxWidth="75%"
-      ml={msg.role === "user" ? "auto" : 0}
-      mb={2}
-    >
+    <Box maxWidth="75%" ml={msg.role === "user" ? "auto" : 0} mb={2}>
       <Box
-        bgcolor={msg.role === "user" ? "#2563eb" : "#1e293b"}
-        color="#fff"
-        p={2}
-        borderRadius={3}
+        bgcolor={msg.role === "user" ? "#d1d5db" : "#e5e7eb"}
+        color="#111827"
+        px={1.5}
+        py={1}
+        borderRadius={4}
       >
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            code({ inline, className, children, ...props }) {
+            code({ inline, className, children }) {
               const match = /language-(\w+)/.exec(className || "");
-
               return !inline ? (
                 <SyntaxHighlighter
                   style={oneDark}
@@ -33,7 +29,7 @@ export default function MessageBubble({ msg }) {
                   {String(children).replace(/\n$/, "")}
                 </SyntaxHighlighter>
               ) : (
-                <code style={{ background: "#333", padding: "2px 6px" }}>
+                <code style={{ background: "#d1d5db", padding: "2px 6px" }}>
                   {children}
                 </code>
               );

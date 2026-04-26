@@ -2,12 +2,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.http import StreamingHttpResponse
+from django.db.models import Q
 from .models import Conversation, Message, Document
 from django.conf import settings
 from pathlib import Path
 from .serializers import ConversationSerializer
 import time
-from .rag import ask_rag
+from .rag import ask_rag, generate_chat_title
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -18,13 +19,14 @@ def chat(request):
     user = request.user
     message = request.data.get("message")
     conversation_id = request.data.get("conversation_id")
+    is_new_conversation = not conversation_id
 
     if conversation_id:
         conversation = Conversation.objects.get(id=conversation_id, user=user)
     else:
         conversation = Conversation.objects.create(
             user=user,
-            title=message[:30]
+            title="New Chat"
         )
 
     Message.objects.create(
@@ -34,6 +36,9 @@ def chat(request):
     )
 
     ai_response = ask_rag(message)
+    if is_new_conversation:
+        conversation.title = generate_chat_title(message)
+        conversation.save(update_fields=["title"])
 
     Message.objects.create(
         conversation=conversation,
@@ -53,13 +58,14 @@ def stream_chat(request):
     user = request.user
     message = request.data.get("message")
     conversation_id = request.data.get("conversation_id")
+    is_new_conversation = not conversation_id
 
     if conversation_id:
         conversation = Conversation.objects.get(id=conversation_id, user=user)
     else:
         conversation = Conversation.objects.create(
             user=user,
-            title=message[:30]
+            title="New Chat"
         )
 
     Message.objects.create(
@@ -86,6 +92,9 @@ def stream_chat(request):
             role="ai",
             content=full_text
         )
+        if is_new_conversation:
+            conversation.title = generate_chat_title(message)
+            conversation.save(update_fields=["title"])
 
     return StreamingHttpResponse(generate(), content_type="text/plain")
 
@@ -93,7 +102,14 @@ def stream_chat(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_conversations(request):
-    conversations = Conversation.objects.filter(user=request.user).order_by("-created_at")
+    search_query = (request.GET.get("q") or "").strip()
+    conversations = Conversation.objects.filter(user=request.user)
+    if search_query:
+        conversations = conversations.filter(
+            Q(title__icontains=search_query) |
+            Q(messages__content__icontains=search_query)
+        ).distinct()
+    conversations = conversations.order_by("-created_at")
     return Response(ConversationSerializer(conversations, many=True).data)
 
 

@@ -2,8 +2,10 @@ import API from "./axios";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export const getConversations = async () => {
-  const res = await API.get("/conversations/");
+export const getConversations = async (query = "") => {
+  const res = await API.get("/conversations/", {
+    params: query ? { q: query } : {},
+  });
   return res.data;
 };
 
@@ -12,9 +14,12 @@ export const getMessages = async (conversationId) => {
   return res.data.messages;
 };
 
-export const uploadFile = async (file) => {
+export const uploadFile = async (file, conversationId = null) => {
   const formData = new FormData();
   formData.append("file", file);
+  if (conversationId) {
+    formData.append("conversation_id", conversationId);
+  }
 
   const res = await API.post("/upload/", formData);
   return res.data;
