@@ -73,10 +73,22 @@ SIMPLE_JWT = {
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 load_dotenv(BASE_DIR / ".env")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@phoenix-ai.local")
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 STREAM_CHUNK_SIZE = int(os.getenv("STREAM_CHUNK_SIZE", "32"))
+VECTOR_BACKEND = os.getenv("VECTOR_BACKEND", "faiss").lower()
+QDRANT_URL = os.getenv("QDRANT_URL", "")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+QDRANT_COLLECTION_PREFIX = os.getenv("QDRANT_COLLECTION_PREFIX", "phoenix_user_")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+ENABLE_LOCAL_SD15 = os.getenv("ENABLE_LOCAL_SD15", "true").lower() == "true"
+ENABLE_LOCAL_SDXL = os.getenv("ENABLE_LOCAL_SDXL", "true").lower() == "true"
+LOCAL_SD15_MODEL_ID = os.getenv("LOCAL_SD15_MODEL_ID", "runwayml/stable-diffusion-v1-5")
+LOCAL_SDXL_MODEL_ID = os.getenv("LOCAL_SDXL_MODEL_ID", "stabilityai/stable-diffusion-xl-base-1.0")
+LOCAL_IMG2IMG_STRENGTH = float(os.getenv("LOCAL_IMG2IMG_STRENGTH", "0.55"))
 # WSGI_APPLICATION = "core.wsgi.application"

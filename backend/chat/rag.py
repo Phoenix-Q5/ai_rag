@@ -1,46 +1,20 @@
-from pathlib import Path
 import re
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-FAISS_PATH = BASE_DIR / "faiss_index"
-
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-db = FAISS.load_local(
-    str(FAISS_PATH),
-    embeddings,
-    allow_dangerous_deserialization=True,
-)
+from .vector_store import vector_store
 llm = Ollama(model="llama3")
-
-
-def get_user_db(user_id):
-    path = BASE_DIR / "faiss_index" / f"user_{user_id}"
-    if not path.exists():
-        return None
-    return FAISS.load_local(
-        str(path),
-        embeddings,
-        allow_dangerous_deserialization=True,
-    )
 
 
 def _tokenize(text):
     return [tok for tok in re.findall(r"\w+", (text or "").lower()) if tok]
 
 
-def _keyword_rank_documents(active_db, query, k=20):
+def _keyword_rank_documents(corpus_docs, query, k=20):
     query_tokens = set(_tokenize(query))
     if not query_tokens:
         return []
-    docstore_dict = getattr(getattr(active_db, "docstore", None), "_dict", {})
-    if not isinstance(docstore_dict, dict):
-        return []
 
     scored_docs = []
-    for doc in docstore_dict.values():
+    for doc in corpus_docs:
         content = getattr(doc, "page_content", "")
         doc_tokens = set(_tokenize(content))
         if not doc_tokens:
@@ -74,16 +48,85 @@ def _fuse_with_rrf(vector_docs, keyword_docs, top_k=5, rrf_k=60):
     return [docs_map[doc_id] for doc_id in ranked_ids[:top_k]]
 
 
-def _retrieve_docs(query, user_id=None):
-    user_db = get_user_db(user_id) if user_id is not None else None
-    active_db = user_db or db
+def _fuse_ranked_lists(ranked_lists, top_k=5, rrf_k=60):
+    rrf_scores = {}
+    docs_map = {}
+    for ranked_docs in ranked_lists:
+        for rank, doc in enumerate(ranked_docs, start=1):
+            doc_id = _doc_id(doc)
+            rrf_scores[doc_id] = rrf_scores.get(doc_id, 0.0) + 1.0 / (rrf_k + rank)
+            docs_map[doc_id] = doc
+    ranked_ids = sorted(rrf_scores, key=lambda doc_id: rrf_scores[doc_id], reverse=True)
+    return [docs_map[doc_id] for doc_id in ranked_ids[:top_k]]
+
+
+def _rewrite_query(query):
+    prompt = f"""
+    Rewrite this user query for semantic retrieval.
+    Keep meaning identical and output only one line.
+    Query: {query}
+    """
     try:
-        vector_docs = active_db.max_marginal_relevance_search(query, k=20)
+        rewritten = llm.invoke(prompt).strip().replace("\n", " ")
+        rewritten = " ".join(rewritten.split())
+        return rewritten or query
     except Exception:
-        vector_docs = active_db.similarity_search(query, k=20)
-    keyword_docs = _keyword_rank_documents(active_db, query, k=20)
-    docs = _fuse_with_rrf(vector_docs, keyword_docs, top_k=5)
-    return docs or vector_docs[:5]
+        return query
+
+
+def _generate_multi_queries(query, rewritten_query, max_queries=3):
+    prompt = f"""
+    Generate {max_queries} alternative search queries for retrieval.
+    Preserve intent. Return one query per line, no numbering.
+    Original: {query}
+    Rewritten: {rewritten_query}
+    """
+    try:
+        raw = llm.invoke(prompt)
+        candidates = []
+        for line in raw.splitlines():
+            q = re.sub(r"^\s*[\-\d\.\)]*\s*", "", line).strip()
+            if q:
+                candidates.append(q)
+        if candidates:
+            return candidates[:max_queries]
+    except Exception:
+        pass
+    return []
+
+
+def _retrieve_docs_for_query(user_id, query, candidate_k=20, top_k=8):
+    vector_docs = vector_store.vector_search(user_id, query, k=candidate_k, use_mmr=True)
+    keyword_docs = _keyword_rank_documents(
+        vector_store.keyword_documents(user_id),
+        query,
+        k=candidate_k,
+    )
+    docs = _fuse_with_rrf(vector_docs, keyword_docs, top_k=top_k)
+    return docs or vector_docs[:top_k]
+
+
+def _retrieve_docs(query, user_id=None):
+    rewritten = _rewrite_query(query)
+    multi_queries = _generate_multi_queries(query, rewritten, max_queries=3)
+    retrieval_queries = [query, rewritten, *multi_queries]
+    deduped_queries = []
+    seen = set()
+    for q in retrieval_queries:
+        key = q.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped_queries.append(q.strip())
+
+    ranked_lists = [
+        _retrieve_docs_for_query(user_id, retrieval_query)
+        for retrieval_query in deduped_queries
+    ]
+    docs = _fuse_ranked_lists(ranked_lists, top_k=5)
+    if docs:
+        return docs
+    return _retrieve_docs_for_query(user_id, query, top_k=5)
 
 
 def _build_prompt(query, docs):

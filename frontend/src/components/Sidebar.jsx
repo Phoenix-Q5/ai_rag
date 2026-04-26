@@ -83,7 +83,16 @@ export default function Sidebar({ setConversationId, docsVersion }) {
   };
 
   return (
-    <Box width="260px" bgcolor="#e5e7eb" color="#111827" p={2}>
+    <Box
+      width="280px"
+      bgcolor="#eef0f3"
+      color="#111827"
+      p={2}
+      borderRight="1px solid #d1d5db"
+      display="flex"
+      flexDirection="column"
+      gap={0.5}
+    >
 
       {/* ➕ New Chat */}
       <Button
@@ -97,9 +106,11 @@ export default function Sidebar({ setConversationId, docsVersion }) {
           backgroundColor: "#d1d5db",
           color: "#111827",
           border: "1px solid #9ca3af",
-          boxShadow: "0 4px 10px rgba(17, 24, 39, 0.08)",
+          boxShadow: "0 3px 8px rgba(17, 24, 39, 0.08)",
+          transition: "all 0.2s ease",
           "&:hover": {
             backgroundColor: "#9ca3af",
+            transform: "translateY(-1px)",
           },
         }}
         onClick={() => setConversationId(null)}
@@ -133,11 +144,12 @@ export default function Sidebar({ setConversationId, docsVersion }) {
           "& .MuiOutlinedInput-root": {
             backgroundColor: "#f9fafb",
             borderRadius: "10px",
+            transition: "all 0.2s ease",
           },
         }}
       />
       <FormControl fullWidth sx={{ mb: 2 }}>
-        <InputLabel id="documents-dropdown-label"></InputLabel>
+        <InputLabel id="documents-dropdown-label">Documents</InputLabel>
         <Select
           labelId="documents-dropdown-label"
           value={selectedDocId}
@@ -164,8 +176,12 @@ export default function Sidebar({ setConversationId, docsVersion }) {
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              borderRadius: 1,
-              "&:hover": { backgroundColor: "#d1d5db" },
+              borderRadius: 2,
+              px: 1.25,
+              py: 0.6,
+              mb: 0.5,
+              transition: "all 0.2s ease",
+              "&:hover": { backgroundColor: "#d8dbe1" },
             }}
           >
             <span

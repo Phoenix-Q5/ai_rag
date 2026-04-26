@@ -68,3 +68,31 @@ export const deleteConversation = (id) =>
 export const getDocuments = () => API.get("/documents/");
 export const deleteDocument = (id) =>
   API.delete(`/documents/${id}/delete/`);
+
+export const getImageModels = async () => {
+  const res = await API.get("/image/models/");
+  return res.data.models || [];
+};
+
+export const generateImage = async ({ prompt, model, width, height, imageFile }) => {
+  const formData = new FormData();
+  formData.append("prompt", prompt);
+  formData.append("model", model);
+  formData.append("width", String(width));
+  formData.append("height", String(height));
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+  const res = await API.post("/image/generate/", formData);
+  return res.data;
+};
+
+export const getImageHistory = async (page = 1, pageSize = 12) => {
+  const res = await API.get("/image/history/", {
+    params: { page, page_size: pageSize },
+  });
+  return res.data;
+};
+
+export const deleteImageHistoryItem = (imageId) =>
+  API.delete(`/image/history/${imageId}/delete/`);

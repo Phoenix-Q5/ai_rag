@@ -33,10 +33,10 @@ export default function ChatWindow({ conversationId, setConversationId, onDocume
   }, [messages]);
 
   return (
-    <Box flex={1} display="flex" flexDirection="column" bgcolor="#f3f4f6">
+    <Box flex={1} display="flex" flexDirection="column" bgcolor="#f8fafc">
       
       {/* 💬 Messages */}
-      <Box flex={1} p={2} overflow="auto">
+      <Box flex={1} p={{ xs: 1.5, md: 2.5 }} overflow="auto">
         {messages.map((msg, i) => (
           <MessageBubble key={i} msg={msg} />
         ))}
@@ -60,7 +60,7 @@ export default function ChatWindow({ conversationId, setConversationId, onDocume
       </Box>
 
       {/* ⌨️ Input */}
-      <Box p={2} borderTop="1px solid #d1d5db" bgcolor="#f9fafb">
+      <Box p={{ xs: 1.5, md: 2 }} borderTop="1px solid #d1d5db" bgcolor="#f8fafc">
         <ChatInput
           setMessages={setMessages}
           conversationId={conversationId}

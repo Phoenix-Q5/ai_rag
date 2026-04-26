@@ -70,7 +70,15 @@ export default function ChatInput({
   };
 
   return (
-    <Box display="flex" gap={1}>
+    <Box
+      display="flex"
+      gap={1}
+      p={0.8}
+      border="1px solid #d1d5db"
+      borderRadius="14px"
+      bgcolor="#eef2f7"
+      alignItems="center"
+    >
       <IconButton
         component="label"
         aria-label="upload document"
@@ -82,7 +90,8 @@ export default function ChatInput({
           borderRadius: "12px",
           backgroundColor: "#e5e7eb",
           color: "#374151",
-          "&:hover": { backgroundColor: "#d1d5db" },
+          transition: "all 0.2s ease",
+          "&:hover": { backgroundColor: "#d1d5db", transform: "translateY(-1px)" },
         }}
       >
         <svg
@@ -118,6 +127,7 @@ export default function ChatInput({
           input: { color: "#111827" },
           "& .MuiOutlinedInput-root": {
             backgroundColor: "#ffffff",
+            borderRadius: "10px",
             "& fieldset": { borderColor: "#d1d5db" },
             "&:hover fieldset": { borderColor: "#9ca3af" },
             "&.Mui-focused fieldset": { borderColor: "#6b7280" },
@@ -137,7 +147,8 @@ export default function ChatInput({
           borderRadius: "12px",
           backgroundColor: "#d1d5db",
           color: "#111827",
-          "&:hover": { backgroundColor: "#9ca3af" },
+          transition: "all 0.2s ease",
+          "&:hover": { backgroundColor: "#9ca3af", transform: "translateY(-1px)" },
         }}
       >
         <svg

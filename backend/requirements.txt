@@ -2,3 +2,9 @@ django
 djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
+qdrant-client
+diffusers
+transformers
+accelerate
+safetensors
+pillow
