@@ -7,8 +7,7 @@ from .models import Conversation, Message, Document
 from django.conf import settings
 from pathlib import Path
 from .serializers import ConversationSerializer
-import time
-from .rag import ask_rag, generate_chat_title
+from .rag import ask_rag, ask_rag_stream, generate_chat_title
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -76,16 +75,31 @@ def stream_chat(request):
 
     def generate():
         full_text = ""
+        chunk_buffer = ""
+        chunk_size = max(1, int(getattr(settings, "STREAM_CHUNK_SIZE", 32)))
+        yield f"[CONV_ID]{conversation.id}[/CONV_ID]"
 
         try:
-            response = ask_rag(message, request.user.id)
+            stream_iter = ask_rag_stream(message, request.user.id)
         except Exception as e:
             print("RAG ERROR:", str(e))
-            response = "Sorry, something went wrong in AI processing."
+            stream_iter = iter(["Sorry, something went wrong in AI processing."])
 
-        for char in response:
-            full_text += char
-            yield char
+        for token in stream_iter:
+            full_text += token
+            chunk_buffer += token
+
+            # Flush on semantic boundaries or when chunk gets large enough.
+            if (
+                len(chunk_buffer) >= chunk_size
+                or chunk_buffer.endswith((" ", "\n"))
+                or any(p in chunk_buffer[-1:] for p in [".", ",", "!", "?", ";", ":"])
+            ):
+                yield chunk_buffer
+                chunk_buffer = ""
+
+        if chunk_buffer:
+            yield chunk_buffer
 
         Message.objects.create(
             conversation=conversation,

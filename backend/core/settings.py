@@ -78,4 +78,5 @@ load_dotenv(BASE_DIR / ".env")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@phoenix-ai.local")
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+STREAM_CHUNK_SIZE = int(os.getenv("STREAM_CHUNK_SIZE", "32"))
 # WSGI_APPLICATION = "core.wsgi.application"
